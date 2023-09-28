@@ -1,5 +1,5 @@
 **Stovba Vladislav 153505**
-# Meet Shop
+# Butcher shop
 
 # Functional requirements
 * Guest
