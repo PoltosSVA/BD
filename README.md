@@ -38,7 +38,7 @@
 </br>
 
 # Entities
-## user+
+## user
 1. `id INT` - PK
 2. `first_name VARCHAR(45)` - user's first name
 3. `last_name VARCHAR(45)` - user's last name
@@ -57,28 +57,28 @@
   </br>
 
   
-## customer+
+## customer
 1. `id INT` - PK
 * OneToOne to "user"
-* OneTomany to "orders"
+* OneToMany to "orders"
   </br>
   </br>
   </br>
 
 
-## employee+
+## employee
 1. `id INT` - PK
 2. `experience INT` - years of work (ex. 12)
 3. `age INT` - age of employee
 
-* ManyToMany to "stores"
+* ManyToOne to "stores"
 * OneToOne to "user"
   </br>
   </br>
   </br>
 
   
-## stores+
+## stores
 1. `id INT` - PK
 2. `title VARCHAR(45)` - store title
 3. `address TEXT` - address of shop
@@ -88,7 +88,7 @@
   </br>
 
 
-## orders+
+## orders
 1. `id INT` - PK
 2. `date DATATIME` - when order was created
 3. `status VARCHAR(30)` - status of order
@@ -100,7 +100,7 @@
   </br>
 
 
-## products+
+## products
 1. `id INT` - PK
 2. `title VARCHAR(45)` - title of product
 3. `amount INT` - count of products
@@ -113,7 +113,7 @@
   </br>
 
 
-## review+
+## review
 1. `id INT` - PK
 2. `date DATE` - date when user left a review
 3. `content TEXT` - information that user write in a review
@@ -125,7 +125,7 @@
   </br>
 
 
-## suppliers+
+## suppliers
 1. `id INT` - PK
 2. `company_name VARCHAR(50)` - name of supplier
 3. `email VARCHAR(255)` - contact email
@@ -139,7 +139,7 @@
 
 
 
-## action_type+
+## action_type
 1. `id INT` - PK
 2. `name VARCHAR(50)` - type of action that been logged
 
@@ -148,8 +148,18 @@
   </br>
   </br>
 
+## journal
+1. `id INT` - PK
+2. `date DATETIME` - time of any action
 
-## orders_products+
+* ManyToOne to "action_type"
+* ManyToOne to "user"
+  </br>
+  </br>
+  </br>
+
+
+## orders_products
 1. `id INT` - PK
 
 * ManyToOne to "orders"
