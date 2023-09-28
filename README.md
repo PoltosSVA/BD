@@ -23,7 +23,7 @@
 * Staff (employee)
   * All Guest functionality
   * View his own place of work
-  * View customer orders
+  * View customer orders and edit it
 
 </br>
 
