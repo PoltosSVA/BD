@@ -1,0 +1,158 @@
+--- log action
+CREATE OR REPLACE PROCEDURE journal_log_proc(id INT, action_id INT)
+LANGUAGE 'plpgsql' AS
+$$
+BEGIN
+	INSERT INTO journal (users_id, journal.date, action_type_id)
+	VALUES (id, current_timestamp, action_id);
+END;
+$$;
+
+--- insert new employee to "employee" table
+CREATE OR REPLACE PROCEDURE employee_insert_proc(new_id INT)
+LANGUAGE 'plpgsql' AS
+$$
+BEGIN
+	INSERT INTO employee (users_id, stores_id,age,experience)
+	VALUES (new_id, 1, 18, 1);
+END;
+$$;
+
+---insert new customer to "customer" table
+CREATE OR REPLACE PROCEDURE customer_insert_proc(new_id INT)
+LANGUAGE 'plpgsql' AS
+$$
+BEGIN
+	INSERT INTO employee (users_id)
+	VALUES (new_id);
+END;
+$$;
+
+-------------------------------------
+Триггерная функция для вставки пользователя
+CREATE OR REPLACE FUNCTION users_insert_trigger_func()
+RETURNS TRIGGER
+
+AS $$
+BEGIN
+	IF NEW.is_staff = false AND NEW.is_superuser = false THEN
+		CALL customer_insert_proc(NEW.id);
+		CALL journal_log_proc(NEW.id, 4);
+	ELSEIF NEW.is_staff = true AND NEW.is_superuser = false THEN
+		CALL employee_insert_proc(NEW.id);
+		CALL journal_log_proc(NEW.id, 5);
+	ELSE
+		CALL journal_log_proc(NEW.id, 6);
+	END IF;
+	RETURN NEW;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+
+CREATE TRIGGER users_insert_trigger
+AFTER INSERT
+ON "users"
+FOR EACH ROW
+EXECUTE PROCEDURE users_insert_trigger_func();
+
+Исключения для случая is_stuff = true and superuser = true
+CREATE OR REPLACE FUNCTION users_forbidden_insert_trigger_func()
+RETURNS TRIGGER 
+AS $$
+BEGIN
+	IF NEW.is_satff = true and NEW.is_superuser = true THEN
+		RAISE EXCEPTION 'Insertion is not allowed for is_staff = true and is_superuser = true';
+	END IF;
+	RETURN NEW;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+
+CREATE TRIGGER users_forbidden_insert_trigger
+BEFORE INSERT
+ON "users"
+FOR EACH ROW
+EXECUTE PROCEDURE users_forbidden_insert_trigger_func()
+
+
+-----------------------------
+-- Insert example: insert into users (first_name, last_name, username, password, email, is_staff, is_superuser) values ('Anton', 'Vorontsov', 'Andreevich', 'uO1(!ssu6&e84\', 'sviridov6@gmail.com', false, false);
+-- ************************************************************************************************************************************************************************************************************************************************
+
+
+Удаление работника 
+CREATE OR REPLACE PROCEDURE employee_delete_proc(old_id INT)
+LANGUAGE 'plpgsql'
+AS $$
+BEGIN
+	DELETE FROM employee WHERE users_id = old_id;
+END;
+$$
+
+CREATE OR REPLACE FUNCTION users_update_to_add_superuser_func()
+RETURNS TRIGGER AS
+$$
+BEGIN
+	NEW.is_staff = false;
+	CALL journal_log_proc(NEW.id,7);
+	RETURN NEW;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+CREATE OR REPLACE TRIGGER users_update_to_add_superuser_trigger
+BEFORE UPDATE
+ON "users"
+FOR EACH ROW
+WHEN (OLD.is_staff = true AND OLD.is_superuser = false AND NEW.is_staff = true AND NEW.is_superuser = true)
+EXECUTE PROCEDURE users_update_to_add_superuser_func();
+
+-- ************************************************************************************************************************************************************************************************************************************************
+
+Удаляем пользователя из таблицы "users" если он был удален из таблицы "customer"
+CREATE OR REPLACE PROCEDURE users_delete_proc(old_id INT)
+LANGUAGE 'plpgsql'
+AS $$
+BEGIN
+	DELETE FROM users WHERE id = old_id;
+END;
+$$
+
+CREATE OR REPLACE FUNCTION customer_delete_proc_wrapper()
+RETURNS TRIGGER AS
+$$
+BEGIN
+    CALL journal_log_proc(OLD.users_id, 8);
+    CALL users_delete_proc(OLD.users_id);
+    RETURN OLD;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+CREATE TRIGGER customer_delete_trigger
+AFTER DELETE
+ON "customer"
+FOR EACH ROW
+EXECUTE PROCEDURE customer_delete_proc_wrapper();
+
+
+CREATE OR REPLACE FUNCTION employee_delete_proc_wrapper()
+RETURNS TRIGGER AS
+$$
+BEGIN
+
+    CALL journal_log_proc(OLD.users_id, 9);
+    CALL users_delete_proc(OLD.users_id);
+
+    RETURN OLD;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+CREATE TRIGGER employee_delete_trigger
+AFTER DELETE
+ON "employee"
+FOR EACH ROW
+EXECUTE PROCEDURE employee_delete_proc_wrapper();
